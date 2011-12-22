@@ -85,7 +85,7 @@ def put():
 
 @app.route('/success/', methods=['POST'])
 def success():
-	pass
+	keys = request.form.keys()
 
 if __name__ == '__main__':
 	if dbg:
