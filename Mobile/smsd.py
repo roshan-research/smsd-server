@@ -6,22 +6,19 @@ import thread, json, time, urllib2, urllib
 
 def server(address, data = False):
 	post = {'name': 'htc-tatto', 'key': '039c86abf0a5d67205d40d756eb0c9c5'}
-	if False:
+	if data:
 		post.update(data)
 	url = 'http://192.168.1.2:5000/' + address
-	return urllib2.urlopen(url, urllib.urlencode(post)).read();
 
-def getMessages():
-	try:
-		msg = server('get/')
-		return json.loads(msg)['messages']
-	except Exception as e:
-		print e
-	return []
+	try: return urllib2.urlopen(url, urllib.urlencode(post)).read()
+	except Exception as e: print e
+	return False;
 
 def sendMessages():
 	# download messages from server
-	messages = getMessages()
+	res = server('get/')
+	if not res: return False
+	messages = json.loads(res)['messages']
 
 	# send messages
 	success = []
@@ -31,14 +28,17 @@ def sendMessages():
 		success.append(str(message['id']))
 	
 	# inform server
-	server('success/', {'ids': (','.join(success))})
+	if len(success) > 0:
+		server('success/', {'ids': (','.join(success))})
 
 # threading
 sending = True
 def tSender():
 	while 1:
 		if sending:
-			sendMessages()
+			try: sendMessages()
+			except Exception as e: print e
+			
 		time.sleep(1)
 
 def tReceiver():
@@ -50,4 +50,4 @@ thread.start_new_thread(tReceiver, ())
 
 # sleep main thread
 while 1:
-	time.sleep(1)
+	time.sleep(600)
