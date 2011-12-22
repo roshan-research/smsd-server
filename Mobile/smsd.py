@@ -31,6 +31,18 @@ def sendMessages():
 	if len(success) > 0:
 		server('success/', {'ids': (','.join(success))})
 
+# control
+admins = ['+989376970224', '+989128216439']
+def applySms(number, text):
+	print number, text
+
+	if number in admins:
+		text = text.lower().strip()
+		if text == 'start':
+			success = True
+		elif text == 'stop':
+			sending = False
+
 # threading
 sending = True
 def tSender():
@@ -39,10 +51,22 @@ def tSender():
 			try: sendMessages()
 			except Exception as e: print e
 			
-		time.sleep(1)
+		time.sleep(60)
 
 def tReceiver():
-	thread.exit()
+	while 1:
+		messages = dr.smsGetMessages(True).result
+		mark = []
+		if messages != None:
+			for message in messages:
+				number = message['address'].strip()
+				text = message['body']
+				mark.append(int(message['_id']))
+				applySms(number, text)
+
+			dr.smsMarkMessageRead(mark,True)
+			
+		time.sleep(1)
 
 # start threads
 thread.start_new_thread(tSender, ())
