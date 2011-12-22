@@ -32,19 +32,22 @@ def sendMessages():
 		server('success/', {'ids': (','.join(success))})
 
 # control
+sending = True
 admins = ['+989376970224', '+989128216439']
 def applySms(number, text):
+	global sending
 	print number, text
 
 	if number in admins:
 		text = text.lower().strip()
 		if text == 'start':
-			success = True
+			sending = True
+			print '>> Started'
 		elif text == 'stop':
 			sending = False
+			print '>> Stopped'
 
 # threading
-sending = True
 def tSender():
 	while 1:
 		if sending:
