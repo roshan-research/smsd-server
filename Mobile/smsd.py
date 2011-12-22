@@ -1,28 +1,37 @@
-# import android
-# dr = android.Android()
-# dr.makeToast('Sender is ready!')
+import android
+dr = android.Android()
+dr.makeToast('Sender is ready!')
 
 import thread, json, time, urllib2, urllib
 
-key = '039c86abf0a5d67205d40d756eb0c9c5'
-url = 'http://192.168.1.2:5000/get/'
+def server(address, data = False):
+	post = {'name': 'htc-tatto', 'key': '039c86abf0a5d67205d40d756eb0c9c5'}
+	if False:
+		post.update(data)
+	url = 'http://192.168.1.2:5000/' + address
+	return urllib2.urlopen(url, urllib.urlencode(post)).read();
 
 def getMessages():
-	data = {'name': 'htc-tatto', 'key': key}
 	try:
-		msg = urllib2.urlopen(url, urllib.urlencode(data)).read()
+		msg = server('get/')
 		return json.loads(msg)['messages']
 	except Exception as e:
 		print e
 	return []
 
 def sendMessages():
+	# download messages from server
 	messages = getMessages()
+
+	# send messages
+	success = []
 	for message in messages:
 		print message['id'], message['to'], message['text'].encode("utf-8")
 		dr.smsSend(message['to'], message['text'].encode("utf-8"))
-
-	# todo: success
+		success.append(str(message['id']))
+	
+	# inform server
+	server('success/', {'ids': (','.join(success))})
 
 # threading
 sending = True
@@ -35,6 +44,7 @@ def tSender():
 def tReceiver():
 	thread.exit()
 
+# start threads
 thread.start_new_thread(tSender, ())
 thread.start_new_thread(tReceiver, ())
 
