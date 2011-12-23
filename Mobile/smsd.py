@@ -8,7 +8,7 @@ def server(address, data = False):
 	post = {'name': 'htc-tatto', 'key': '039c86abf0a5d67205d40d756eb0c9c5'}
 	if data:
 		post.update(data)
-	url = 'http://192.168.1.2:5000/' + address
+	url = 'http://50.56.222.11:5000/' + address
 
 	try: return urllib2.urlopen(url, urllib.urlencode(post)).read()
 	except Exception as e: print e
