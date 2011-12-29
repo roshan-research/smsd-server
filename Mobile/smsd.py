@@ -66,7 +66,7 @@ def tReceiver():
 		if received != None:
 			for sms in received:
 				number = sms['address'].strip()
-				text = sms['body']
+				text = sms['body'].encode("utf-8")
 				mark.append(int(sms['_id']))
 				cmd = postData('r/', {'from': number, 'text': text})
 				if cmd: applyCommand(cmd)
