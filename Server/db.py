@@ -12,3 +12,9 @@ def getCursor(con = None):
 	if con == None:
 		con = createCon()
 	return con.cursor()
+
+def isMobileValid(cur, name, key):
+	if cur == None:
+		return False
+	else:
+		
