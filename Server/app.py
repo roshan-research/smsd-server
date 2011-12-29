@@ -33,26 +33,18 @@ def get():
 		if key == 'limit':
 			has_limit = True
 	
-	if not has_key or not has_name:
+	if (not has_key) or (not has_name):
 		return json.dump({'error': "NO, Input Error!"})
+	
 	mobile_key = request.form['key']
 	mobile_name = request.form['name']
+
 	if has_limit:
 		LIMIT = request.form['limit']
-
-	mobile_query = "SELECT * FROM mobiles WHERE name = \"%s\"" % mobile_name
-	con.query(mobile_query)
-	r = con.store_result()
-	if r.num_rows() < 1:
-		return json.dump({'error': "NO! your key is not here!"})
-	else:
-		row = r.fetch_row()
-		(m_id, m_name, m_key) = row[0]
-		if mobile_key != m_key:
-			return json.dump({'error': "NO! you have the wrong key!"})
-
-
-
+	
+	if not db.isMobileValid(con, mobile_name, mobile_key):
+		con.close()
+		return json.dump({'error': "NO! your name and/or key is not here!"})
 	# RETURN THE MESSAGES
 	get_query = "SELECT * FROM transactions WHERE delivered_at IS NULL LIMIT %d" % LIMIT
 	con.query(get_query)
@@ -76,15 +68,8 @@ def get():
 	dic = {}
 	dic['messages'] = arr
 	j = json.dumps(dic)
+	con.close()
 	return j
-
-@app.route('/put/', methods=['POST'])
-def put():
-	pass
-
-@app.route('/success/', methods=['POST'])
-def success():
-	return json.dump({'error': "NO! your key is not here!"})
 
 @app.route('/success/', methods=['POST'])
 def success():
@@ -105,24 +90,22 @@ def success():
 	mobile_key = request.form['key']
 	mobile_name = request.form['name']
 
-	mobile_query = "SELECT * FROM mobiles WHERE name = \"%s\"" % mobile_name
-	con.query(mobile_query)
-	r = con.store_result()
-	if r.num_rows() < 1:
-		return json.dump({'error': "NO! your key is not here!"})
-	else:
-		row = r.fetch_row()
-		(m_id, m_name, m_key) = row[0]
-		if mobile_key != m_key:
-			return json.dump({'error': "NO! you have the wrong key!"})
+	if not db.isMobileValid(con, mobile_name, mobile_key):
+		con.close()
+		return json.dump({'error': "NO! your name and/or key is not here!"})
 	
 	if has_ids:
 		success_ids = request.form['ids']
-		for t_id in success_ids:
-			print t_id
-		return json.dump({'success': 'success'})
+		db.setSentTime(con, success_ids)
+		con.close()
+		return json.dumps({'success': 'success'})
 	else:
-		return json.dump({'error': 'NO! success'})
+		con.close()
+		return json.dumps({'error': 'NO! success'})
+
+@app.route('/put/', methods=['POST'])
+def put():
+	pass
 
 if __name__ == '__main__':
 	if dbg:
