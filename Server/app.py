@@ -8,7 +8,6 @@ import datetime
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-
 dbg = True
 # dbg = False
 
@@ -136,7 +135,6 @@ def r():
 	return status
 
 if __name__ == '__main__':
-	# db.handelRecieved("+989128216439", "Help")
 	if dbg:
 		app.run('0.0.0.0', debug=True)
 	else:
