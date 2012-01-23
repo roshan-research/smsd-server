@@ -1,79 +1,88 @@
-import android
-dr = android.Android()
-dr.makeToast('Sender is ready!')
+import json, time, urllib2, urllib
+from threading import Thread
 
-import thread, json, time, urllib2, urllib
+deploy = True
+if deploy:
+	import android
+	dr = android.Android()
+	dr.makeToast('smsd is ready!')
 
-def server(address, data = False):
-	post = {'name': 'htc-tatto', 'key': '039c86abf0a5d67205d40d756eb0c9c5'}
-	if data:
-		post.update(data)
-	url = 'http://50.56.222.11:5000/' + address
+def drSend(to, text):
+	if deploy: dr.smsSend(to, text)
+	print 'sms sent to %s' % to
 
-	try: return urllib2.urlopen(url, urllib.urlencode(post)).read()
-	except Exception as e: print e
-	return False;
+def drGetMessages():
+	if deploy: return dr.smsGetMessages(True).result
 
-def sendMessages():
-	# download messages from server
-	res = server('get/')
-	if not res: return False
-	messages = json.loads(res)['messages']
+def drMarkMessageRead(mark):
+	if deploy: dr.smsMarkMessageRead(mark,True)
 
-	# send messages
-	success = []
-	for message in messages:
-		print message['id'], message['to'], message['text'].encode("utf-8")
-		dr.smsSend(message['to'], message['text'].encode("utf-8"))
-		success.append(str(message['id']))
-	
-	# inform server
-	if len(success) > 0:
-		server('success/', {'ids': (','.join(success))})
-
-# control
+# config
+pollInterval = 2 if deploy else 1
+deviceInfo = {'name': 'htc-tatto', 'key': '2f1a5ee55fe8435b6aa82782d318f5e2'}
+serverAddress = 'http://192.168.1.4:5000/' # 'http://50.56.222.11:5000/'
 sending = True
-admins = ['+989376970224', '+989128216439']
-def applySms(number, text):
-	global sending
-	print number, text
 
-	if number in admins:
-		text = text.lower().strip()
-		if text == 'start':
-			sending = True
-			print '>> Started'
-		elif text == 'stop':
-			sending = False
-			print '>> Stopped'
+def postData(address, data = False):
+	post = deviceInfo
+	if data: post.update(data)
+	url = serverAddress + address
+
+	try: return urllib2.urlopen(url, urllib.urlencode(post), 10).read()
+	except Exception as e: print address, data, e
+	return False
+
+def applyCommand(cmd):
+	if cmd == 'stop': sending = False
+	elif cmd == 'start': sending = True
 
 # threading
 def tSender():
 	while 1:
-		if sending:
-			try: sendMessages()
-			except Exception as e: print e
-			
-		time.sleep(60)
+		time.sleep(pollInterval)
+		if not sending: continue
+
+		try:
+			# download messages from server
+			res = postData('get/')
+			if not res: continue
+			msgs = json.loads(res)['messages']
+
+			# send messages
+			success = []
+			for message in msgs:
+				drSend(message['to'], message['text'].encode("utf-8"))
+				success.append(str(message['id']))
+			msgs = []
+
+			# inform server
+			if len(success) > 0:
+				postData('success/', {'ids': (','.join(success))})
+		
+		except Exception as e: print 'send error: ', e
 
 def tReceiver():
 	while 1:
-		messages = dr.smsGetMessages(True).result
-		mark = []
-		if messages != None:
-			for message in messages:
-				number = message['address'].strip()
-				text = message['body']
-				mark.append(int(message['_id']))
-				applySms(number, text)
-
-			dr.smsMarkMessageRead(mark,True)
-			
 		time.sleep(1)
 
+		try:
+			received = drGetMessages()
+			mark = []
+			if received != None:
+				for sms in received:
+					number = sms['address'].strip()
+					text = sms['body'].encode("utf-8")
+					mark.append(int(sms['_id']))
+					cmd = postData('r/', {'from': number, 'text': text})
+					if cmd: applyCommand(cmd)
+
+				drMarkMessageRead(mark)
+
+		except Exception as e: print 'receive error: ', e
+			
 # start threads
-thread.start_new_thread(tSender, ())
-thread.start_new_thread(tReceiver, ())
+sender = Thread(target=tSender); sender.start()
+receiver = Thread(target=tReceiver); receiver.start()
 
 # sleep main thread
 while 1:
