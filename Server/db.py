@@ -38,7 +38,15 @@ def setSentTime(con, s_ids):
 	else:
 		u_query = "UPDATE transactions SET sent_at = NOW() WHERE id IN (%s)" % s_ids
 		con.query(u_query)
-	con.commit()	
+	con.commit()
+
+def setDeliveredTime(con, s_ids):
+	if con == None:
+		return False
+	else:
+		u_query = "UPDATE transactions SET delivered_at = NOW() WHERE id IN (%s)" % s_ids
+		con.query(u_query)
+	con.commit()
 
 def handelRecieved(number, text):
 	if number[-10:] in admins:

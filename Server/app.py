@@ -45,13 +45,13 @@ def get():
 		con.close()
 		return json.dump({'error': "NO! your name and/or key is not here!"})
 	# RETURN THE MESSAGES
-	get_query = "SELECT * FROM transactions WHERE delivered_at IS NULL LIMIT %d" % LIMIT
+	get_query = "SELECT * FROM transactions WHERE delivered_to_phone_at IS NULL LIMIT %d" % LIMIT
 	con.query(get_query)
 	r = con.store_result()
 	for i in xrange(0,r.num_rows()):
 		dic = {}
 		row = r.fetch_row()
-		(m_id, m_to, m_text, c_DT, d_DT, s_DT) = row[0]
+		(m_id, m_to, m_text, c_CA, c_DTPA, d_SA, s_DA) = row[0]
 
 		# Add to array
 		dic['id'] = m_id
@@ -60,7 +60,7 @@ def get():
 		arr.append(dic)
 
 		# Update Database
-		update_query = "UPDATE transactions SET delivered_at = now() WHERE id = %d" % m_id
+		update_query = "UPDATE transactions SET delivered_to_phone_at = now() WHERE id = %d" % m_id
 		con.query(update_query)
 		con.commit()
 
@@ -71,8 +71,8 @@ def get():
 	print j
 	return j
 
-@app.route('/success/', methods=['POST'])
-def success():
+@app.route('/sent/', methods=['POST'])
+def sent():
 	con = db.createCon()
 	# Validate and Get POST data
 	keys = request.form.keys()
@@ -97,6 +97,38 @@ def success():
 	if has_ids:
 		success_ids = request.form['ids']
 		db.setSentTime(con, success_ids)
+		con.close()
+		return json.dumps({'success': 'success'})
+	else:
+		con.close()
+		return json.dumps({'error': 'NO! success'})
+
+@app.route('/delivered/', methods=['POST'])
+def delivered():
+	con = db.createCon()
+	# Validate and Get POST data
+	keys = request.form.keys()
+	has_key = has_name = has_ids = False
+	for key in keys:
+		if key == 'key':
+			has_key = True
+		if key == 'name':
+			has_name = True
+		if key == 'ids':
+			has_ids = True
+	
+	if not has_key or not has_name:
+		return json.dump({'error': "NO, Input Error!"})
+	mobile_key = request.form['key']
+	mobile_name = request.form['name']
+
+	if not db.isMobileValid(con, mobile_name, mobile_key):
+		con.close()
+		return json.dump({'error': "NO! your name and/or key is not here!"})
+	
+	if has_ids:
+		success_ids = request.form['ids']
+		db.setDeliveredTime(con, success_ids)
 		con.close()
 		return json.dumps({'success': 'success'})
 	else:
