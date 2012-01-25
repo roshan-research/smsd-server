@@ -152,7 +152,7 @@ def r():
 	
 	if not has_key or not has_name or not has_from or not has_key:
 		con.close()
-		return json.dump({'error': "NO, Input Error!"})
+		return json.dumps({'error': "NO, Input Error!"})
 	
 	mobile_key = request.form['key']
 	mobile_name = request.form['name']
