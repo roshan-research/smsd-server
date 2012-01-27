@@ -65,7 +65,6 @@ def handelRecieved(number, text):
 			con.query(add_query)
 			con.commit()
 			j = json.dumps({'status': 'ok'})
-			print "hello"
 			return j
 	if number[-10:] in rabets or number[-10:] in admins:
 		if text.lower() == 'help':
@@ -75,7 +74,6 @@ def handelRecieved(number, text):
 			con.query(add_query)
 			con.commit()
 			j = json.dumps({'status': 'ok'})
-			print "help"
 			return j
 		else:
 			parts = text.split("\n")
@@ -84,9 +82,8 @@ def handelRecieved(number, text):
 					for t_n in admins_number:
 						add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(t_n, "\n".join(parts[2:]))
 						con = createCon()
-						con.query(add_query)
+						con.query(add_query.encode('UTF-8'))
 						con.commit()
-					print "sendtoall"
 					return json.dumps({'status': 'ok'})
 				else:
 					print parts[1].lower().strip()

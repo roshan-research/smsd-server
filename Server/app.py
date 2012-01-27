@@ -135,29 +135,39 @@ def delivered():
 		con.close()
 		return json.dumps({'error': 'NO! success'})
 
+
+# This one method is special in a way that data is read from request.data not from request.form
+# maybe I have to change this later
 @app.route('/r/', methods=['POST'])
 def r():
 	con = db.createCon()
-	keys = request.form.keys()
-	has_key = has_name = has_from = has_text = False
-	for key in keys:
-		if key == 'key':
-			has_key = True
-		if key == 'name':
-			has_name = True
-		if key == 'from':
-			has_from = True
-		if key == 'text':
-			has_text = True
+	json_data = json.loads(request.data)
+	keys = json_data.keys()
+	has_key = has_name = has_from = has_text = True
+	# has_from = True
 	
+	for k in keys:
+		if k == 'key':
+			print "has_key"
+			has_key = True
+		if k == 'name':
+			print "has_name"
+			has_name = True
+		if k == 'from':
+			print "has_from"
+			has_from = True
+		if k == 'text':
+			print "has_text"
+			has_text = True
+		
 	if not has_key or not has_name or not has_from or not has_key:
 		con.close()
 		return json.dumps({'error': "NO, Input Error!"})
 	
-	mobile_key = request.form['key']
-	mobile_name = request.form['name']
-	mobile_from = request.form['from']
-	mobile_text = request.form['text']
+	mobile_key = json_data['key']
+	mobile_name = json_data['name']
+	mobile_from = json_data['from']
+	mobile_text = json_data['text']
 
 	if not db.isMobileValid(con, mobile_name, mobile_key):
 		con.close()
