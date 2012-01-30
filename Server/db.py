@@ -1,6 +1,7 @@
 # coding=utf8
 import MySQLdb
 import json
+import log
 
 SETTING_HOST = 'localhost'
 SETTING_USER = 'root'
@@ -52,13 +53,15 @@ def setDeliveredTime(con, s_ids):
 	con.commit()
 
 def handelRecieved(number, text):
-	#TODO: log this to databse
+	#log data
+	log.receivedMessage(number, text)
+
 	if number[-10:] in admins:
 		if text.lower() == 'stop':
 			return json.dumps({'status': 'stop'})
 		elif text.lower == 'start':
 			return json.dumps({'status': 'start'})
-		elif text.lower() in ['hello', 'hi', 'hello world']:
+		elif text.lower() in ['hello', 'hi', 'hello world', 'salam']:
 			sendThis = "Hello Admin"
 			add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(number, sendThis)
 			con = createCon()
@@ -68,22 +71,20 @@ def handelRecieved(number, text):
 			return j
 	if number[-10:] in rabets or number[-10:] in admins:
 		if text.lower() == 'help':
-			sendThis = "sent to all\ntafsir\nmatn"
-			add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(number, sendThis)
-			con = createCon()
-			con.query(add_query)
-			con.commit()
+			addHelp(number)
 			j = json.dumps({'status': 'ok'})
 			return j
 		else:
 			parts = text.split("\n")
 			if parts[0].lower().strip() == 'send to all':
-				if parts[1].lower().strip() == 'tafsir':
-					for t_n in admins_number:
-						add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(t_n, "\n".join(parts[2:]))
-						con = createCon()
-						con.query(add_query.encode('UTF-8'))
-						con.commit()
+				if parts[1].lower().strip() == 'admins':
+					addForGroup(admins_number, "\n".join(parts[2:]))
+					return json.dumps({'status': 'ok'})
+				elif parts[1].lower().strip() == 'rabets':
+					addForGroup(rabets_number, "\n".join(parts[2:]))
+					return json.dumps({'status': 'ok'})
+				elif parts[1].lower().strip() == 'tafsir':
+					#TODO verfify
 					return json.dumps({'status': 'ok'})
 				else:
 					print parts[1].lower().strip()
@@ -91,3 +92,23 @@ def handelRecieved(number, text):
 			else:
 				print parts[0].lower().strip()
 				return json.dumps({'status': 'Not OK'})
+
+def handelRing(number):
+	#log data
+	log.phoneRang(number)
+	return json.dumps({'status': 'OK'})
+
+#This will add a help response message fot this number to the database so the phone will send it when it asks for it
+def addHelp(number):
+	sendThis = u'سلام\nبرای ارسال پیامک به تمام مشترکان مجموعه تفسیر قرآن حاج آقا قاسمیان یک پیامک مثل زیر به این شماره ارسال کنید. شاید لازم باشد که ارسال پیامک را تأیید کنید.\n\nsend to all\ntafsir\nمتنی که برای همه ارسال خواهد شد'.encode('UTF-8')
+	add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(number, sendThis)
+	con = createCon()
+	con.query(add_query)
+	con.commit()
+
+def addForGroup(numbers, text):
+	for t_n in numbers:
+		add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(t_n, text)
+		con = createCon()
+		con.query(add_query.encode('UTF-8'))
+		con.commit()

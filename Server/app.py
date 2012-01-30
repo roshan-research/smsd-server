@@ -148,19 +148,15 @@ def r():
 	
 	for k in keys:
 		if k == 'key':
-			print "has_key"
 			has_key = True
 		if k == 'name':
-			print "has_name"
 			has_name = True
 		if k == 'from':
-			print "has_from"
 			has_from = True
 		if k == 'text':
-			print "has_text"
 			has_text = True
 		
-	if not has_key or not has_name or not has_from or not has_key:
+	if not has_key or not has_name or not has_from or not has_text:
 		con.close()
 		return json.dumps({'error': "NO, Input Error!"})
 	
@@ -174,6 +170,36 @@ def r():
 		return json.dump({'error': "NO! your name and/or key is not here!"})
 	
 	status = db.handelRecieved(mobile_from, mobile_text)
+	return status
+
+@app.route('/ranged/', methods=['POST'])
+def ranged():
+	con = db.createCon()
+	json_data = json.loads(request.data)
+	keys = json_data.keys()
+	has_key = has_name = has_from = True
+	
+	for k in keys:
+		if k == 'key':
+			has_key = True
+		if k == 'name':
+			has_name = True
+		if k == 'from':
+			has_from = True
+		
+	if not has_key or not has_name or not has_from:
+		con.close()
+		return json.dumps({'error': "NO, Input Error!"})
+	
+	mobile_key = json_data['key']
+	mobile_name = json_data['name']
+	mobile_from = json_data['from']
+
+	if not db.isMobileValid(con, mobile_name, mobile_key):
+		con.close()
+		return json.dump({'error': "NO! your name and/or key is not here!"})
+	
+	status = db.handelRing(mobile_from)
 	return status
 
 if __name__ == '__main__':
