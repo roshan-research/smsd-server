@@ -2,6 +2,7 @@
 import MySQLdb
 import json
 import log
+import tosend
 
 SETTING_HOST = 'localhost'
 SETTING_USER = 'root'
@@ -15,6 +16,8 @@ tafsir = ["09128083630","09123041652","09125143376","09124033658","09122016847",
 
 admins_number = ['09128216439', '09376970224']
 rabets_number = ['09125436744']
+
+tafsir = ['09128216439', '09376970224']
 
 def createCon():
 	return MySQLdb.connect(host = SETTING_HOST, user = SETTING_USER, passwd = SETTING_PASSWD, db = SETTING_DB, charset = 'utf8')
@@ -59,7 +62,7 @@ def handelRecieved(number, text):
 	if number[-10:] in admins:
 		if text.lower() == 'stop':
 			return json.dumps({'status': 'stop'})
-		elif text.lower == 'start':
+		elif text.lower() == 'start':
 			return json.dumps({'status': 'start'})
 		elif text.lower() in ['hello', 'hi', 'hello world', 'salam']:
 			sendThis = "Hello Admin"
@@ -74,6 +77,13 @@ def handelRecieved(number, text):
 			addHelp(number)
 			j = json.dumps({'status': 'ok'})
 			return j
+		elif text.encode('UTF-8').lower().strip() == u'بله'.encode('UTF-8'):
+			if tosend.hasPendingSendToAll(number[-10:]):
+				message = tosend.getSendToAll(number[-10:])
+				handelRecieved2(number,message)
+				tosend.removeSendToAll(number[-10:])
+			j = json.dumps({'status': 'ok'})
+			return j
 		else:
 			parts = text.split("\n")
 			if parts[0].lower().strip() == 'send to all':
@@ -84,7 +94,8 @@ def handelRecieved(number, text):
 					addForGroup(rabets_number, "\n".join(parts[2:]))
 					return json.dumps({'status': 'ok'})
 				elif parts[1].lower().strip() == 'tafsir':
-					#TODO verfify
+					tosend.addSendToAll(number[-10:], text)
+					addVerify(number, "\n".join(parts[2:]))
 					return json.dumps({'status': 'ok'})
 				else:
 					print parts[1].lower().strip()
@@ -92,6 +103,28 @@ def handelRecieved(number, text):
 			else:
 				print parts[0].lower().strip()
 				return json.dumps({'status': 'Not OK'})
+
+def handelRecieved2(number, text):
+	#log data
+	log.receivedMessage(number, "[varified]" + text)
+	if number[-10:] in rabets or number[-10:] in admins:
+		parts = text.split("\n")
+		if parts[0].lower().strip() == 'send to all':
+			if parts[1].lower().strip() == 'admins':
+				addForGroup(admins_number, "\n".join(parts[2:]))
+				return json.dumps({'status': 'ok'})
+			elif parts[1].lower().strip() == 'rabets':
+				addForGroup(rabets_number, "\n".join(parts[2:]))
+				return json.dumps({'status': 'ok'})
+			elif parts[1].lower().strip() == 'tafsir':
+				addForGroup(tafsir, "\n".join(parts[2:]))
+				return json.dumps({'status': 'ok'})
+			else:
+				print parts[1].lower().strip()
+				return json.dumps({'status': 'Not OK'})
+		else:
+			print parts[0].lower().strip()
+			return json.dumps({'status': 'Not OK'})
 
 def handelRing(number):
 	#log data
@@ -112,3 +145,10 @@ def addForGroup(numbers, text):
 		con = createCon()
 		con.query(add_query.encode('UTF-8'))
 		con.commit()
+
+def addVerify(number, text):
+	sendThis = u'پیغام زیر برای %d نفر ارسال خواهد شد. آیا مطمئن هستید؟ با «بله» پاسخ دهید.\n\n%s'.encode('UTF-8') %(len(tafsir),text.encode('UTF-8'))
+	con = createCon()
+	add_query = 'INSERT INTO transactions (`to`, `text`) VALUES ("%s", "%s")' %(number, sendThis)
+	con.query(add_query)
+	con.commit()

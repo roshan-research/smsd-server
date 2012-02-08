@@ -172,8 +172,8 @@ def r():
 	status = db.handelRecieved(mobile_from, mobile_text)
 	return status
 
-@app.route('/ranged/', methods=['POST'])
-def ranged():
+@app.route('/rang/', methods=['POST'])
+def rang():
 	con = db.createCon()
 	json_data = json.loads(request.data)
 	keys = json_data.keys()
